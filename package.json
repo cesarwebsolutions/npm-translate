@@ -1,0 +1,19 @@
+{
+  "name": "npm-translate",
+  "version": "1.0.3",
+  "description": "Pacote para criar arquivos de tradução para Angular",
+  "main": "index.js",
+  "scripts": {
+    "create-translations": "node src/index.js"
+  },
+  "bin": {
+    "executar": "./src/index.js"
+  },
+  "keywords": [
+    "angular",
+    "translation",
+    "i18n"
+  ],
+  "author": "César Figueiredo",
+  "license": "MIT"
+}
