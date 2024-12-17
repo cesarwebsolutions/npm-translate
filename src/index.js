@@ -4,6 +4,10 @@ const path = require("path");
 const { Translate } = require("@google-cloud/translate").v2;
 
 let translate = undefined;
+const fileMapping = {
+  "pt-BR": { default: "pt-BR.json", en: "en-US.json", es: "es-ES.json" },
+  pt: { default: "pt.json", en: "en.json", es: "es.json" },
+};
 
 async function updateTranslationFile(baseContent, targetContent, lang) {
   for (const [key, value] of Object.entries(baseContent)) {
@@ -12,8 +16,23 @@ async function updateTranslationFile(baseContent, targetContent, lang) {
       await updateTranslationFile(value, targetContent[key], lang);
     } else {
       if (!targetContent.hasOwnProperty(key)) {
-        const [translation] = await translate.translate(value, lang);
-        targetContent[key] = translation;
+        const placeholderRegex = /{{(.*?)}}/g;
+
+        const placeholders = [];
+        const protectedText = value.replace(placeholderRegex, (match, p1) => {
+          placeholders.push(match);
+          return `__PLACEHOLDER_${placeholders.length}__`;
+        });
+        const [translatedText] = await translate.translate(protectedText, lang);
+        console.log("[translatedText]", translatedText);
+        const finalText = translatedText.replace(
+          /__PLACEHOLDER_(\d+)__/g,
+          (match, p1) => {
+            return placeholders[parseInt(p1) - 1];
+          }
+        );
+        console.log("[finalText]", finalText);
+        targetContent[key] = finalText;
       }
     }
   }
@@ -27,20 +46,18 @@ async function traverseAndTranslate(directory, targetLang = "en") {
 
     if (fs.statSync(fullPath).isDirectory()) {
       if (file === "i18n") {
-        console.log(fullPath);
-        const ptFilePath = path.join(fullPath, "pt.json");
-        const targetFilePath = path.join(fullPath, `${targetLang}.json`);
-
-        console.log(ptFilePath);
-        if (fs.existsSync(ptFilePath)) {
-          const ptContent = JSON.parse(fs.readFileSync(ptFilePath, "utf8"));
-          console.log(ptContent);
+        const { filePath, targetFilePath } = await getFilePaths(
+          fullPath,
+          targetLang
+        );
+        if (fs.existsSync(filePath)) {
+          console.log("[filePath]", filePath);
+          const ptContent = JSON.parse(fs.readFileSync(filePath, "utf8"));
           let targetContent = {};
 
           if (fs.existsSync(targetFilePath)) {
             targetContent = JSON.parse(fs.readFileSync(targetFilePath, "utf8"));
           }
-          console.log(targetContent);
 
           await updateTranslationFile(ptContent, targetContent, targetLang);
 
@@ -49,7 +66,6 @@ async function traverseAndTranslate(directory, targetLang = "en") {
             JSON.stringify(targetContent, null, 2),
             "utf8"
           );
-          console.log(`Arquivo de tradução atualizado: ${targetFilePath}`);
         }
       } else {
         await traverseAndTranslate(fullPath, targetLang);
@@ -58,6 +74,24 @@ async function traverseAndTranslate(directory, targetLang = "en") {
   }
 }
 
+async function getFilePaths(fullPath, targetLang) {
+  const langPriority = ["pt-BR", "pt"];
+  let filePath, targetFilePath;
+
+  for (const lang of langPriority) {
+    const defaultFilePath = path.join(fullPath, fileMapping[lang].default);
+
+    if (fs.existsSync(defaultFilePath)) {
+      filePath = defaultFilePath;
+      targetFilePath = fileMapping[lang][targetLang]
+        ? path.join(fullPath, fileMapping[lang][targetLang])
+        : null;
+      break;
+    }
+  }
+
+  return { filePath, targetFilePath };
+}
 (async function main() {
   const config = path.join(__dirname, "../../../config.json");
   fs.readFile(config, "utf8", (err, data) => {

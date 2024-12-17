@@ -1,13 +1,13 @@
 {
   "name": "npm-translate",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "Pacote para criar arquivos de tradução para Angular",
   "main": "index.js",
   "scripts": {
-    "create-translations": "node src/index.js"
+    "start-translation": "node src/index.js"
   },
   "bin": {
-    "executar": "./src/index.js"
+    "start-translation": "./src/index.js"
   },
   "keywords": [
     "angular",

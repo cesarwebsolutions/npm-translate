@@ -40,5 +40,14 @@ Certifique-se de ter configurado o arquivo config.js com seu e-mail e chave da A
 ## Rodando o script
 
 ```bash
-npx executar
+npx start-translation
 ```
+
+## Notas de Atualização
+
+### [1.1.0] - 2024-12-17
+
+#### Adicionado
+
+- Suporte para arquivos `pt-BR.json`, gerando arquivos para inglês como `en-US.json` e espanho `es-ES.json`.
+- Suporte para projeger variaveis dos textos. Qualquer valor entre `{{}}` não serão traduzidos Ex: 'Bom dia {{ name }}, tudo bem?'
